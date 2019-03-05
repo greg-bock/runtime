@@ -94,6 +94,11 @@ type hypervisor struct {
 	BlockDeviceCacheSet     bool   `toml:"block_device_cache_set"`
 	BlockDeviceCacheDirect  bool   `toml:"block_device_cache_direct"`
 	BlockDeviceCacheNoflush bool   `toml:"block_device_cache_noflush"`
+	VirtioFS                bool   `toml:"enable_virtio_fs"`
+	VirtioFSDaemon          string `toml:"virtio_fs_daemon"`
+	VirtioFSCacheSize       uint32 `toml:"virtio_fs_cache_size"`
+	VirtioFSCache           string `toml:"virtio_fs_cache"`
+	VirtioFSSharedVersions  bool   `toml:"virtio_fs_shared_versions"`
 	NumVCPUs                int32  `toml:"default_vcpus"`
 	DefaultMaxVCPUs         uint32 `toml:"default_maxvcpus"`
 	MemorySize              uint32 `toml:"default_memory"`
@@ -493,6 +498,11 @@ func newQemuHypervisorConfig(h hypervisor) (vc.HypervisorConfig, error) {
 		return vc.HypervisorConfig{}, err
 	}
 
+	if h.VirtioFS && h.VirtioFSDaemon == "" {
+		return vc.HypervisorConfig{},
+			errors.New("cannot enable virtio-fs without daemon path in configuration file")
+	}
+
 	machineAccelerators := h.machineAccelerators()
 	kernelParams := h.kernelParams()
 	machineType := h.machineType()
@@ -538,6 +548,11 @@ func newQemuHypervisorConfig(h hypervisor) (vc.HypervisorConfig, error) {
 		BlockDeviceCacheSet:     h.BlockDeviceCacheSet,
 		BlockDeviceCacheDirect:  h.BlockDeviceCacheDirect,
 		BlockDeviceCacheNoflush: h.BlockDeviceCacheNoflush,
+		VirtioFS:                h.VirtioFS,
+		VirtioFSDaemon:          h.VirtioFSDaemon,
+		VirtioFSCacheSize:       h.VirtioFSCacheSize,
+		VirtioFSCache:           h.VirtioFSCache,
+		VirtioFSSharedVersions:  h.VirtioFSSharedVersions,
 		EnableIOThreads:         h.EnableIOThreads,
 		Msize9p:                 h.msize9p(),
 		UseVSock:                useVSock,

@@ -7,9 +7,11 @@ package virtcontainers
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"math"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -572,6 +574,34 @@ func (q *qemu) startSandbox(timeout int) error {
 			}
 		}
 	}()
+
+	if q.config.VirtioFS {
+		var cmd *exec.Cmd
+		sockPath, err := utils.BuildSocketPath(runStoragePath, q.id, "vhost-fs.sock")
+		if err != nil {
+			return err
+		}
+
+		sourcePath := filepath.Join(kataHostSharedDir, q.id)
+
+		var args []string
+		args = append(args, "-o", "virtio_socket="+sockPath,
+			"-o", "source="+sourcePath,
+			"-o", "cache="+q.config.VirtioFSCache)
+		if q.config.VirtioFSSharedVersions {
+			args = append(args, "-o", "shared")
+		}
+		args = append(args, "/")
+
+		// The daemon will terminate when the vhost-user socket
+		// connection with QEMU closes.  Therefore we do not keep track
+		// of this child process.
+		cmd = exec.Command(q.config.VirtioFSDaemon, args...)
+
+		if err := cmd.Start(); err != nil {
+			return err
+		}
+	}
 
 	var strErr string
 	strErr, err = govmmQemu.LaunchQemu(q.qemuConfig, newQMPLogger())
@@ -1237,6 +1267,39 @@ func (q *qemu) addDevice(devInfo interface{}, devType deviceType) error {
 	switch v := devInfo.(type) {
 	case types.Volume:
 		q.qemuConfig.Devices = q.arch.append9PVolume(q.qemuConfig.Devices, v)
+		if q.config.VirtioFS {
+			q.Logger().Info("Adding vhost-user-fs-pci volume")
+
+			randBytes, err := utils.GenerateRandomBytes(8)
+			if err != nil {
+				return err
+			}
+			id := hex.EncodeToString(randBytes)
+
+			// TODO make this unique so multiple volumes can be added!
+			sockPath, err := utils.BuildSocketPath(runStoragePath, q.id, "vhost-fs.sock")
+			if err != nil {
+				return err
+			}
+
+			vhostDev := config.VhostUserDeviceAttrs{
+				Tag:            v.MountTag,
+				Type:           config.VhostUserFS,
+				CacheSize:      q.config.VirtioFSCacheSize,
+				Cache:          q.config.VirtioFSCache,
+				SharedVersions: q.config.VirtioFSSharedVersions,
+			}
+			vhostDev.SocketPath = sockPath
+			vhostDev.DevID = id
+
+			q.qemuConfig.Devices, err = q.arch.appendVhostUserDevice(q.qemuConfig.Devices, vhostDev)
+			if err != nil {
+				return err
+			}
+		} else {
+			q.Logger().Info("Adding virtio-9p volume")
+			q.qemuConfig.Devices = q.arch.append9PVolume(q.qemuConfig.Devices, v)
+		}
 	case types.Socket:
 		q.qemuConfig.Devices = q.arch.appendSocket(q.qemuConfig.Devices, v)
 	case kataVSOCK:

@@ -140,6 +140,21 @@ type HypervisorConfig struct {
 	// DisableBlockDeviceUse disallows a block device from being used.
 	DisableBlockDeviceUse bool
 
+	// VirtioFS enables virtio-fs instead of virtio-9p
+	VirtioFS bool
+
+	// VirtioFSDaemon is the virtio-fs vhost-user daemon path
+	VirtioFSDaemon string
+
+	// VirtioFSCacheSize is the virtio-fs DAX cache size in GiB
+	VirtioFSCacheSize uint32
+
+	// VirtioFSCache cache mode for fs version cache or "none"
+	VirtioFSCache string
+
+	// VirtioFSSharedVersions enables shared version metadata daemon
+	VirtioFSSharedVersions bool
+
 	// KernelParams are additional guest kernel parameters.
 	KernelParams []Param
 

@@ -525,6 +525,12 @@ func (q *qemuArchBase) appendVhostUserDevice(devices []govmmQemu.Device, attr co
 	case config.VhostUserSCSI:
 		qemuVhostUserDevice.TypeDevID = utils.MakeNameID("scsi", attr.DevID, maxDevIDSize)
 	case config.VhostUserBlk:
+	case config.VhostUserFS:
+		qemuVhostUserDevice.TypeDevID = utils.MakeNameID("fs", attr.DevID, maxDevIDSize)
+		qemuVhostUserDevice.Tag = attr.Tag
+		qemuVhostUserDevice.CacheSize = attr.CacheSize
+		qemuVhostUserDevice.Cache = attr.Cache
+		qemuVhostUserDevice.SharedVersions = attr.SharedVersions
 	}
 
 	qemuVhostUserDevice.VhostUserType = govmmQemu.DeviceDriver(attr.Type)
