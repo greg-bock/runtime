@@ -1266,7 +1266,6 @@ func (q *qemu) addDevice(devInfo interface{}, devType deviceType) error {
 
 	switch v := devInfo.(type) {
 	case types.Volume:
-		q.qemuConfig.Devices = q.arch.append9PVolume(q.qemuConfig.Devices, v)
 		if q.config.VirtioFS {
 			q.Logger().Info("Adding vhost-user-fs-pci volume")
 
