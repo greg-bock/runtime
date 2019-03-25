@@ -633,8 +633,6 @@ func (k *kataAgent) startSandbox(sandbox *Sandbox) error {
 
 	// append 9p shared volume to storages only if filesystem sharing is supported
 	if caps.IsFsSharingSupported() {
-		var storages []*grpc.Storage
-
 		// We mount the shared directory in a predefined location
 		// in the guest.
 		// This is where at least some of the host config files
